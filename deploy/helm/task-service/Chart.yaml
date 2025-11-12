@@ -1,0 +1,15 @@
+apiVersion: v2
+name: task-service
+description: gRPC Task Service for Taskboard
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+
+keywords:
+  - grpc
+  - microservice
+  - tasks
+
+maintainers:
+  - name: Paul Ohrt
+    email: paul.ohrt@me.com

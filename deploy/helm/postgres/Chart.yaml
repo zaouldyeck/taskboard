@@ -1,0 +1,16 @@
+apiVersion: v2
+name: postgres
+description: PostgreSQL database for taskboard application
+type: application
+version: 0.1.0
+appVersion: "15.0"
+
+# Metadata about the chart.
+keywords:
+  - database
+  - postgres
+  - postgresql
+
+maintainers:
+  - name: Paul Ohrt
+    email: paul.ohrt@me.com

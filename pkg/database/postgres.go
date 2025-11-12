@@ -34,7 +34,6 @@ func NewPostgresDB(cfg Config) (*sql.DB, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
-	defer db.Close()
 
 	db.SetMaxOpenConns(25)                 // Concurrent connections.
 	db.SetMaxIdleConns(5)                  // Keep 5 connections "warm".

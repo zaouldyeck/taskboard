@@ -1,0 +1,45 @@
+# Default values for task-service
+
+replicaCount: 2
+
+# Container image
+image:
+  repository: localhost:5010/taskboard-task-service
+  tag: "scratch"
+  pullPolicy: Always
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 50051
+  annotations: {}
+
+# Resource limits (can be overridden by environment)
+resources:
+  requests:
+    memory: "128Mi"
+    cpu: "100m"
+  limits:
+    memory: "256Mi"
+    cpu: "200m"
+
+# Database configuration
+database:
+  host: "taskboard-db-postgres"
+  port: 5432
+  name: "taskboard"
+  user: "taskboard"
+  password: "taskboard"
+  sslmode: "disable"
+
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+
+# Pod security context (empty for baseline compatibility)
+podSecurityContext: {}
+
+# Container security context (empty for baseline compatibility)
+securityContext: {}

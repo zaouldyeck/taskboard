@@ -1,0 +1,37 @@
+# Default values for postgres chart.
+
+# Container image configuration
+image:
+  repository: postgres
+  tag: "15-alpine"
+  pullPolicy: IfNotPresent
+
+# Database credentials
+auth:
+  username: taskboard
+  password: taskboard
+  database: taskboard
+
+# Resource limits
+resources:
+  requests:
+    memory: "256Mi"
+    cpu: "250m"
+  limits:
+    memory: "512Mi"
+    cpu: "500m"
+
+# Persistent storage
+persistence:
+  enabled: true
+  size: 1Gi
+  storageClassName: "local-path"
+  accessMode: ReadWriteOnce
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 5432
+
+# Number of replicas
+replicaCount: 1
