@@ -28,7 +28,7 @@ releases:
       app: taskboard
       component: database
 
-  # Task Service
+  # Task Service (gRPC)
   - name: taskboard
     namespace: taskboard
     chart: ./deploy/helm/task-service
@@ -41,9 +41,27 @@ releases:
       - name: image.repository
         value: {{ requiredEnv "REGISTRY_IP" }}:5000/taskboard-task-service
       - name: image.tag
-        value: {{ .Environment.Values | get "imageTag" "scratch" }}
+        value: {{ .Environment.Values | get "imageTag" "latest" }}
     labels:
       app: taskboard
       component: service
       environment: {{ .Environment.Name }}
 
+  # API Gateway (HTTP)
+  - name: taskboard-api-gateway
+    namespace: taskboard
+    chart: ./deploy/helm/api-gateway
+    values:
+      - ./deploy/helm/api-gateway/values.yaml
+      - ./deploy/environments/{{ .Environment.Name }}.yaml
+    needs:
+      - taskboard/taskboard
+    set:
+      - name: image.repository
+        value: {{ requiredEnv "REGISTRY_IP" }}:5000/taskboard-api-gateway
+      - name: image.tag
+        value: {{ .Environment.Values | get "imageTag" "latest" }}
+    labels:
+      app: taskboard
+      component: gateway
+      environment: {{ .Environment.Name }}

@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	pb "github.com/zaouldyeck/taskboard/pkg/api/task/v1"
+	pb "github.com/zaouldyeck/taskboard/api/proto/task/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )

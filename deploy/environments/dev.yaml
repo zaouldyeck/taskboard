@@ -1,6 +1,6 @@
 # Development environment
 
-imageTag: scratch
+imageTag: latest
 
 replicaCount: 2
 

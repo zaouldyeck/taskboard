@@ -8,10 +8,10 @@ import (
 	"os/signal"
 	"syscall"
 
+	pb "github.com/zaouldyeck/taskboard/api/proto/task/v1"
+	"github.com/zaouldyeck/taskboard/internal/database"
 	"github.com/zaouldyeck/taskboard/internal/task/repository"
 	"github.com/zaouldyeck/taskboard/internal/task/service"
-	pb "github.com/zaouldyeck/taskboard/pkg/api/task/v1"
-	"github.com/zaouldyeck/taskboard/pkg/database"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )

@@ -1,21 +1,16 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ .Release.Name }}-task-service
+  name: taskboard-task-service
+  namespace: {{ .Release.Namespace }}
   labels:
-    app: {{ .Release.Name }}-task-service
-    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
-    release: {{ .Release.Name }}
-  {{- with .Values.service.annotations }}
-  annotations:
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
+    app: task-service
 spec:
-  type: {{ .Values.service.type }}
+  type: ClusterIP
   ports:
-  - port: {{ .Values.service.port }}
-    targetPort: grpc
+  - port: 50051
+    targetPort: 50051
     protocol: TCP
     name: grpc
   selector:
-    app: {{ .Release.Name }}-task-service
+    app: task-service

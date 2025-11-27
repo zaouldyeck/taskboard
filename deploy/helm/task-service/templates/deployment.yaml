@@ -1,57 +1,57 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Release.Name }}-task-service
+  name: task-service
+  namespace: {{ .Release.Namespace }}
   labels:
-    app: {{ .Release.Name }}-task-service
-    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
-    release: {{ .Release.Name }}
+    app: task-service
 spec:
-  replicas: {{ .Values.replicaCount }}
+  replicas: 1
   selector:
     matchLabels:
-      app: {{ .Release.Name }}-task-service
+      app: task-service
   template:
     metadata:
       labels:
-        app: {{ .Release.Name }}-task-service
+        app: task-service
     spec:
       containers:
       - name: task-service
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        imagePullPolicy: Always
         ports:
-        - name: grpc
-          containerPort: 50051
-          protocol: TCP
+        - containerPort: 50051
+          name: grpc
         env:
         - name: DB_HOST
-          value: {{ .Values.database.host | quote }}
+          value: "taskboard-db-postgres"
         - name: DB_PORT
-          value: {{ .Values.database.port | quote }}
+          value: "5432"
         - name: DB_USER
-          value: {{ .Values.database.user | quote }}
-        - name: DB_PASSWORD
-          value: {{ .Values.database.password | quote }}
+          value: "taskboard"
         - name: DB_NAME
-          value: {{ .Values.database.name | quote }}
-        - name: DB_SSLMODE
-          value: {{ .Values.database.sslmode | quote }}
-        - name: PORT
+          value: "taskboard"
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: taskboard-db-postgresql
+              key: password
+        - name: GRPC_PORT
           value: "50051"
         resources:
-          {{- toYaml .Values.resources | nindent 10 }}
-        livenessProbe:
-          tcpSocket:
-            port: grpc
-          initialDelaySeconds: 10
-          periodSeconds: 10
-          timeoutSeconds: 5
-          failureThreshold: 3
+          limits:
+            cpu: 200m
+            memory: 256Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
         readinessProbe:
           tcpSocket:
-            port: grpc
+            port: 50051
           initialDelaySeconds: 5
-          periodSeconds: 5
-          timeoutSeconds: 3
-          failureThreshold: 3
+          periodSeconds: 10
+        livenessProbe:
+          tcpSocket:
+            port: 50051
+          initialDelaySeconds: 10
+          periodSeconds: 10

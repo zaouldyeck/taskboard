@@ -9,8 +9,8 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	pb "github.com/zaouldyeck/taskboard/api/proto/task/v1"
 	"github.com/zaouldyeck/taskboard/internal/task/repository"
-	pb "github.com/zaouldyeck/taskboard/pkg/api/task/v1"
 )
 
 // TaskService implements gRPC TaskServiceServer interface.
