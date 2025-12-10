@@ -7,7 +7,6 @@ A production-ready, real-time task management system built with Go microservices
 - [Architecture](#architecture)
 - [Prerequisites](#prerequisites)
 - [Quick Start](#quick-start)
-- [Detailed Setup](#detailed-setup)
 - [Testing](#testing)
 - [Architecture Deep Dive](#architecture-deep-dive)
 - [Development](#development)
@@ -90,30 +89,19 @@ A production-ready, real-time task management system built with Go microservices
 ## 🔧 Prerequisites
 
 ### Required Software
-```bash
-# Docker (for Talos cluster and registry)
-docker --version  # Should be 20.10+
 
-# Go (for building services)
-go version  # Should be 1.21+
+Ensure you have the following installed:
 
-# Helm (for Kubernetes package management)
-helm version  # Should be 3.12+
-
-# Helmfile (for managing multiple Helm releases)
-helmfile --version  # Should be 0.157+
-
-# kubectl (for Kubernetes management)
-kubectl version  # Should be 1.28+
-
-# talosctl (for Talos cluster management)
-talosctl version  # Should be 1.6+
-```
+- Docker 20.10+
+- Go 1.21+
+- Helm 3.12+
+- Helmfile 0.157+
+- kubectl 1.28+
+- talosctl 1.6+
 
 ### Installation Instructions
 
-<details>
-<summary><b>macOS</b></summary>
+#### macOS
 ```bash
 # Using Homebrew
 brew install docker
@@ -125,10 +113,8 @@ brew install kubectl
 # Install talosctl
 brew install siderolabs/tap/talosctl
 ```
-</details>
 
-<details>
-<summary><b>Linux</b></summary>
+#### Linux
 ```bash
 # Docker
 curl -fsSL https://get.docker.com -o get-docker.sh
@@ -155,105 +141,27 @@ sudo mv kubectl /usr/local/bin/
 # talosctl
 curl -sL https://talos.dev/install | sh
 ```
-</details>
 
 ---
 
 ## 🚀 Quick Start
 
-Get the entire system running in 5 minutes:
+Get the entire system running in minutes:
 ```bash
-# 1. Clone repository
+# Clone repository
 git clone https://github.com/zaouldyeck/taskboard.git
 cd taskboard
 
-# 2. Create Talos cluster
-./scripts/create-cluster.sh
-
-# 3. Deploy everything
-./scripts/deploy.sh
-
-# 4. Test it works
-./scripts/test.sh
-```
-
-**Open browser to test page to see real-time updates!**
-
----
-
-## 📖 Detailed Setup
-
-### Step 1: Create Talos Kubernetes Cluster
-
-Talos is a modern, secure, and minimal Kubernetes distribution.
-```bash
-# Run the cluster creation script
-./scripts/create-cluster.sh
-```
-
-**What this does:**
-1. Creates Docker network (`taskboard`)
-2. Generates Talos configuration
-3. Spins up Talos control plane node
-4. Bootstraps Kubernetes
-5. Installs Helm controller
-6. Configures kubectl context
-
-**Verify cluster:**
-```bash
-kubectl get nodes
-# Should show:
-# NAME                 STATUS   ROLES           AGE   VERSION
-# talos-demo-cluster   Ready    control-plane   2m    v1.29.0
-```
-
----
-
-### Step 2: Set Up Docker Registry
-
-We need a local registry for our container images:
-```bash
-./scripts/registry.sh
-```
-
-**What this does:**
-1. Creates persistent volume for images
-2. Starts registry on port 5010
-3. Connects to `taskboard` network
-4. Configures registry for Kubernetes access
-
-**Verify registry:**
-```bash
-curl http://localhost:5010/v2/_catalog
-# Should return: {"repositories":[]}
-```
-
----
-
-### Step 3: Deploy Infrastructure
-
-Deploy database, message broker, and services:
-```bash
-# Set registry IP (required for Helmfile)
-export REGISTRY_IP=$(docker inspect registry -f '{{range $net, $config := .NetworkSettings.Networks}}{{if eq $net "taskboard"}}{{$config.IPAddress}}{{end}}{{end}}')
-
-echo "Registry IP: $REGISTRY_IP"  # Should show 10.5.0.x
-
-# Deploy everything
+# Deploy everything (creates cluster, registry, and all services)
 ./scripts/deploy.sh
 ```
 
-**Deployment order:**
-1. **PostgreSQL** - Database for task storage
-2. **NATS** - Message broker for events
-3. **Task Service** - Business logic + gRPC API
-4. **API Gateway** - HTTP REST + WebSocket
-
-**What happens:**
-1. Builds Docker images for services
-2. Pushes to local registry
-3. Deploys via Helmfile in dependency order
-4. Waits for all pods to be ready
+The deploy script will:
+1. Create Talos Kubernetes cluster in Docker
+2. Set up local Docker registry
+3. Build and push service images
+4. Deploy PostgreSQL, NATS, Task Service, and API Gateway
+5. Wait for all pods to be ready
 
 **Verify deployment:**
 ```bash
@@ -270,9 +178,9 @@ kubectl get pods -n taskboard
 
 ---
 
-### Step 4: Test the System
+## 🧪 Testing
 
-#### A. Test REST API
+### Test REST API
 ```bash
 # Port forward to access API
 kubectl port-forward -n taskboard svc/api-gateway 8080:8080 &
@@ -291,9 +199,6 @@ curl -X POST http://localhost:8080/api/tasks \
     "created_by": 100
   }' | jq .
 
-# Get task
-curl http://localhost:8080/api/tasks/1 | jq .
-
 # List tasks
 curl "http://localhost:8080/api/tasks?board_id=1" | jq .
 
@@ -306,55 +211,49 @@ curl -X PUT http://localhost:8080/api/tasks/1 \
 curl -X DELETE http://localhost:8080/api/tasks/1
 ```
 
-#### B. Test Real-Time WebSocket
+### Test Real-Time WebSocket
 
-1. **Copy test page:**
+**Open the test page:**
 ```bash
+# Copy test page to accessible location
 cp test/taskboard-test.html /tmp/
-```
 
-2. **Open in browser:**
-```bash
-# macOS
+# Open in browser
+# macOS:
 open /tmp/taskboard-test.html
 
-# Linux
+# Linux:
 xdg-open /tmp/taskboard-test.html
 
-# Or manually open: file:///tmp/taskboard-test.html
+# Or manually navigate to: file:///tmp/taskboard-test.html
 ```
 
-3. **You should see:**
-   - ✅ Green "Connected to WebSocket" status
-   - Empty events area
+**What to expect:**
 
-4. **Create a task:**
-   - Type task title
-   - Click "Create Task"
-   - **Watch event appear instantly!**
+1. ✅ Green "Connected to WebSocket" status appears
+2. Type a task title and click "Create Task"
+3. **Watch the event appear instantly in the Live Events area!**
+4. Open the page in 2 browser windows side-by-side
+5. Create a task in one window
+6. **See it appear in both windows simultaneously!** ✨
 
-5. **Test multi-user:**
-   - Open test page in 2 browser windows side-by-side
-   - Create task in window 1
-   - **See it appear in window 2 instantly!** ✨
+### Monitor Event Flow
 
-#### C. Test Event Flow
-
-**Terminal 1 - Watch events:**
+**Terminal 1 - Watch task service publish events:**
 ```bash
 kubectl logs -n taskboard -l app=task-service -f | grep "📤"
 ```
 
-**Terminal 2 - Watch broadcasts:**
+**Terminal 2 - Watch API gateway broadcast events:**
 ```bash
 kubectl logs -n taskboard -l app=api-gateway -f | grep "📨"
 ```
 
-**Terminal 3 - Create task:**
+**Terminal 3 - Create a task:**
 ```bash
 curl -X POST http://localhost:8080/api/tasks \
   -H "Content-Type: application/json" \
-  -d '{"board_id": 1, "title": "Event test", "created_by": 100}'
+  -d '{"board_id": 1, "title": "Real-time test", "created_by": 100}'
 ```
 
 **Expected output:**
@@ -373,11 +272,9 @@ Terminal 2:
 
 ## 🎯 Architecture Deep Dive
 
-### Why This Architecture?
+### Why Event-Driven Architecture?
 
-#### Event-Driven Design
-
-**Traditional approach (polling):**
+**Traditional polling approach:**
 ```
 Browser: "Any updates?" → Server: "No"
 Browser: "Any updates?" → Server: "No"
@@ -387,16 +284,16 @@ Browser: "Any updates?" → Server: "Yes, here's 1 update"
 Problems:
 - Wastes bandwidth (many empty requests)
 - High latency (only checks every N seconds)
-- Server load (constant requests)
+- Server load (constant polling)
 ```
 
-**Our approach (WebSocket + events):**
+**Our WebSocket + NATS approach:**
 ```
-Browser ←─WebSocket─→ Server
-                       ↑
-                     NATS event arrives
-                       ↓
-               Instant push to browser
+Browser ←─WebSocket─→ API Gateway ←─NATS─→ Task Service
+                           ↓
+                    Event arrives
+                           ↓
+                 Instant push to browser
 
 Benefits:
 - Minimal bandwidth (only send actual updates)
@@ -404,67 +301,45 @@ Benefits:
 - Lower server load (persistent connections)
 ```
 
-#### Microservices Benefits
+### Microservices Benefits
 
 **Separation of Concerns:**
-- **Task Service**: Business logic only (doesn't care about HTTP/WebSocket)
-- **API Gateway**: Protocol translation (doesn't care about business logic)
-- **NATS**: Message routing (doesn't care about content)
+- **Task Service**: Business logic only
+- **API Gateway**: Protocol translation (HTTP/WebSocket ↔ gRPC)
+- **NATS**: Message routing
 
 **Independent Scaling:**
 ```bash
-# Scale API Gateway (more WebSocket connections)
+# Scale API Gateway for more WebSocket connections
 kubectl scale deployment api-gateway -n taskboard --replicas=5
 
-# Scale Task Service (more gRPC capacity)
+# Scale Task Service for more gRPC capacity
 kubectl scale deployment task-service -n taskboard --replicas=3
 ```
 
 **Technology Flexibility:**
-- Want to add mobile app? Just consume NATS events
-- Want to add analytics? Subscribe to NATS topics
-- Want to replace Go with Rust? One service at a time
+- Add mobile app → Just consume NATS events
+- Add analytics → Subscribe to NATS topics
+- Replace components → One service at a time
 
-### WebSocket Implementation
+### WebSocket Hub Pattern
 
-#### Hub Pattern
-
-The Hub acts as a central switchboard:
+The Hub manages all WebSocket connections as a central switchboard:
 ```go
 type Hub struct {
     clients    map[*Client]bool  // All connected browsers
     register   chan *Client      // New connections
     unregister chan *Client      // Disconnections
-    broadcast  chan []byte       // Messages to send
+    broadcast  chan []byte       // Messages to broadcast
 }
 ```
 
 **Why this pattern?**
 - **Thread-safe**: Single goroutine manages clients map
 - **Non-blocking**: Channels buffer messages
-- **Efficient broadcasting**: Send to all clients in one loop
+- **Efficient**: Broadcast to all clients in one loop
 
-#### Ping/Pong Keepalive
-
-WebSocket connections use ping/pong to detect dead connections:
-```
-Every 54 seconds:
-  Server → Ping → Client
-  Client → Pong → Server
-
-If no pong in 60 seconds:
-  Connection considered dead
-  Server closes it
-```
-
-**Why?**
-- Mobile devices can drop connections silently
-- Firewalls can close idle connections
-- Prevents resource leaks
-
-### NATS Messaging
-
-#### Pub/Sub Pattern
+### NATS Pub/Sub Pattern
 
 **Publisher (Task Service):**
 ```go
@@ -473,26 +348,24 @@ nats.Publish("tasks.created", eventJSON)
 
 **Subscriber (API Gateway):**
 ```go
-nats.Subscribe("tasks.>", handleEvent)  // Wildcard subscription
+nats.Subscribe("tasks.>", handleEvent)  // Wildcard: all task events
 ```
 
-**Benefits:**
-- Decoupled: Services don't know about each other
-- Scalable: Add more subscribers without changing publishers
-- Flexible: Different services can subscribe to different topics
-
-#### Subject Hierarchy
+**Subject Hierarchy:**
 ```
 tasks.created       ← Task created events
 tasks.updated       ← Task updated events
 tasks.deleted       ← Task deleted events
-tasks.>             ← All task events (wildcard)
+tasks.>             ← Wildcard: all task events
 
-boards.created      ← Could add board events
-boards.>            ← All board events
-
+boards.>            ← Could add board events
 users.>             ← Could add user events
 ```
+
+**Benefits:**
+- **Decoupled**: Services don't know about each other
+- **Scalable**: Add subscribers without changing publishers
+- **Flexible**: Different services subscribe to different topics
 
 ### Database Schema
 ```sql
@@ -512,8 +385,8 @@ CREATE INDEX idx_tasks_completed ON tasks(completed);
 ```
 
 **Design decisions:**
-- `SERIAL` for auto-incrementing IDs
-- `BIGINT` for foreign keys (allows large scale)
+- SERIAL for auto-incrementing IDs
+- BIGINT for foreign keys (allows large scale)
 - Indexes on common query filters
 - Timestamps for audit trail
 
@@ -524,58 +397,44 @@ CREATE INDEX idx_tasks_completed ON tasks(completed);
 ### Project Structure
 ```
 taskboard/
-├── api/
-│   └── proto/
-│       └── task/
-│           └── v1/
-│               ├── task.proto           # gRPC API definition
-│               └── task_grpc.pb.go      # Generated code
+├── api/proto/task/v1/          # gRPC API definitions
+│   ├── task.proto
+│   └── task_grpc.pb.go
 ├── cmd/
 │   ├── api-gateway/
-│   │   ├── main.go                      # Gateway entrypoint
+│   │   ├── main.go
 │   │   └── Dockerfile
 │   └── task-service/
-│       ├── main.go                      # Service entrypoint
+│       ├── main.go
 │       └── Dockerfile
 ├── internal/
-│   ├── database/
-│   │   ├── postgres.go                  # DB connection
-│   │   └── schema.go                    # Schema initialization
+│   ├── database/               # Database connection & schema
 │   ├── gateway/
-│   │   ├── grpcclient/                  # gRPC client
-│   │   ├── handlers/                    # HTTP handlers
-│   │   └── websocket/                   # WebSocket hub & clients
-│   │       ├── hub.go
-│   │       └── client.go
+│   │   ├── grpcclient/         # gRPC client
+│   │   ├── handlers/           # HTTP handlers
+│   │   └── websocket/          # WebSocket hub & clients
 │   └── task/
-│       ├── repository/                  # Data access layer
-│       │   └── postgres.go
-│       └── service/                     # Business logic
-│           └── service.go
+│       ├── repository/         # Data access layer
+│       └── service/            # Business logic
 ├── deploy/
-│   ├── environments/
-│   │   ├── dev.yaml                     # Dev config
-│   │   └── prod.yaml                    # Prod config
-│   └── helm/
-│       ├── postgres/                    # Postgres chart
-│       ├── nats/                        # NATS chart
-│       ├── task-service/                # Task service chart
-│       └── api-gateway/                 # Gateway chart
+│   ├── environments/           # Environment configs
+│   │   ├── dev.yaml
+│   │   └── prod.yaml
+│   └── helm/                   # Helm charts
+│       ├── postgres/
+│       ├── nats/
+│       ├── task-service/
+│       └── api-gateway/
 ├── scripts/
-│   ├── create-cluster.sh                # Talos cluster setup
-│   ├── registry.sh                      # Registry setup
-│   ├── deploy.sh                        # Build & deploy
-│   ├── destroy.sh                       # Teardown
-│   └── test.sh                          # Integration tests
+│   ├── deploy.sh               # Build & deploy everything
+│   └── destroy.sh              # Teardown cluster
 ├── test/
-│   └── taskboard-test.html              # WebSocket test page
-├── helmfile.yaml.gotmpl                 # Helmfile configuration
-├── go.mod
-├── go.sum
+│   └── taskboard-test.html     # WebSocket test page
+├── helmfile.yaml.gotmpl        # Helmfile configuration
 └── README.md
 ```
 
-### Building Services
+### Building Services Manually
 ```bash
 # Build task-service
 docker build -t taskboard-task-service:latest -f cmd/task-service/Dockerfile .
@@ -589,42 +448,32 @@ docker push localhost:5010/taskboard-task-service:latest
 
 docker tag taskboard-api-gateway:latest localhost:5010/taskboard-api-gateway:latest
 docker push localhost:5010/taskboard-api-gateway:latest
+
+# Redeploy with new images
+export REGISTRY_IP=$(docker inspect registry -f '{{range $net, $config := .NetworkSettings.Networks}}{{if eq $net "taskboard"}}{{$config.IPAddress}}{{end}}{{end}}')
+helmfile sync
 ```
 
-### Updating Protobuf
+### Local Development (Outside Kubernetes)
 
-If you modify `api/proto/task/v1/task.proto`:
+Run services locally for faster development:
+
+**Terminal 1 - PostgreSQL:**
 ```bash
-# Install protoc compiler
-brew install protobuf  # macOS
-# or
-apt-get install protobuf-compiler  # Linux
-
-# Install Go plugins
-go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
-go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
-
-# Generate code
-protoc --go_out=. --go_opt=paths=source_relative \
-       --go-grpc_out=. --go-grpc_opt=paths=source_relative \
-       api/proto/task/v1/task.proto
-```
-
-### Local Development
-
-Run services locally (outside Kubernetes):
-```bash
-# Terminal 1 - PostgreSQL
 docker run --rm --name postgres \
   -e POSTGRES_USER=taskboard \
   -e POSTGRES_PASSWORD=taskboard \
   -e POSTGRES_DB=taskboard \
   -p 5432:5432 postgres:15
+```
 
-# Terminal 2 - NATS
+**Terminal 2 - NATS:**
+```bash
 docker run --rm --name nats -p 4222:4222 nats:2.10
+```
 
-# Terminal 3 - Task Service
+**Terminal 3 - Task Service:**
+```bash
 export DB_HOST=localhost
 export DB_PORT=5432
 export DB_USER=taskboard
@@ -634,8 +483,10 @@ export NATS_URL=nats://localhost:4222
 export PORT=50051
 
 go run cmd/task-service/main.go
+```
 
-# Terminal 4 - API Gateway
+**Terminal 4 - API Gateway:**
+```bash
 export HTTP_PORT=8080
 export TASK_SERVICE_ADDR=localhost:50051
 export NATS_URL=nats://localhost:4222
@@ -648,11 +499,9 @@ go run cmd/api-gateway/main.go
 # Unit tests
 go test ./...
 
-# Integration tests
-./scripts/test.sh
+# Load testing with hey
+go install github.com/rakyll/hey@latest
 
-# Load testing
-# Install hey: go install github.com/rakyll/hey@latest
 hey -n 1000 -c 10 -m POST \
   -H "Content-Type: application/json" \
   -d '{"board_id":1,"title":"Load test","created_by":100}' \
@@ -663,97 +512,87 @@ hey -n 1000 -c 10 -m POST \
 
 ## 🐛 Troubleshooting
 
-### Cluster Issues
+### Cluster Not Ready
 
-**Problem: Nodes not ready**
+**Check node status:**
 ```bash
 kubectl get nodes
-# Shows: NotReady
 
-# Check Talos health
+# If NotReady, check Talos health:
 talosctl health --nodes 10.5.0.2
-
-# Check kubelet logs
-talosctl logs --nodes 10.5.0.2 kubelet
 ```
 
-**Problem: Pods not scheduling**
+**Pods not scheduling:**
 ```bash
 kubectl describe pod <pod-name> -n taskboard
 
-# Common issue: Control plane taint
+# Common fix: Remove control plane taint
 kubectl taint nodes --all node-role.kubernetes.io/control-plane:NoSchedule-
 ```
 
-### Image Pull Issues
+### Image Pull Failures
 
-**Problem: ImagePullBackOff**
+**Check registry IP:**
 ```bash
-kubectl describe pod <pod-name> -n taskboard
+kubectl get deployment task-service -n taskboard -o jsonpath='{.spec.template.spec.containers[0].image}'
 
-# Check which registry IP is being used
-kubectl get deployment <name> -n taskboard -o jsonpath='{.spec.template.spec.containers[0].image}'
-
-# Should show: 10.5.0.x:5000/...
+# Should show: 10.5.0.x:5000/taskboard-task-service:latest
 # NOT: 172.17.0.2:5000/...
+```
 
-# Fix: Use correct registry IP
+**Fix registry IP:**
+```bash
 export REGISTRY_IP=$(docker inspect registry -f '{{range $net, $config := .NetworkSettings.Networks}}{{if eq $net "taskboard"}}{{$config.IPAddress}}{{end}}{{end}}')
+
 helmfile sync
 ```
 
-### WebSocket Issues
+### WebSocket Connection Failed
 
-**Problem: WebSocket won't connect**
+**Check endpoint exists:**
 ```bash
-# Check endpoint exists
 curl -i http://localhost:8080/ws
-# Should return: HTTP/1.1 426 Upgrade Required
 
-# Check logs
-kubectl logs -n taskboard -l app=api-gateway | grep -i websocket
+# Should return: HTTP/1.1 426 Upgrade Required (this is correct!)
+```
+
+**Check logs:**
+```bash
+kubectl logs -n taskboard -l app=api-gateway | grep -E "WebSocket|Hub|subscribed"
 
 # Should see:
 # ✅ WebSocket Hub started
 # ✅ WebSocket endpoint registered
+# ✅ Hub subscribed to tasks.* events
 ```
 
-**Problem: Events not appearing**
+### Events Not Appearing
+
+**Check NATS connections:**
 ```bash
-# Check NATS connection
+# API Gateway
 kubectl logs -n taskboard -l app=api-gateway | grep NATS
 # Should see: Connected to NATS successfully
 
+# Task Service
 kubectl logs -n taskboard -l app=task-service | grep NATS
 # Should see: Connected to NATS successfully
+```
 
-# Check event publishing
+**Check event flow:**
+```bash
+# Publishing
 kubectl logs -n taskboard -l app=task-service | grep "📤"
 # Should see: 📤 Published event: tasks.created
 
-# Check event reception
+# Broadcasting
 kubectl logs -n taskboard -l app=api-gateway | grep "📨"
 # Should see: 📨 Received NATS event on tasks.created
 ```
 
-### Database Issues
+### Complete Reset
 
-**Problem: Connection refused**
-```bash
-# Check PostgreSQL is running
-kubectl get pods -n taskboard -l app=taskboard-db
-
-# Check service
-kubectl get svc -n taskboard taskboard-db-postgres
-
-# Test connection from task-service pod
-kubectl exec -it -n taskboard deploy/task-service -- sh
-nc -zv taskboard-db-postgres 5432
-```
-
-### Complete Restart
-
-If all else fails:
+If all else fails, start fresh:
 ```bash
 # Destroy everything
 ./scripts/destroy.sh
@@ -761,8 +600,7 @@ If all else fails:
 # Wait for cleanup
 sleep 10
 
-# Start fresh
-./scripts/create-cluster.sh
+# Deploy again
 ./scripts/deploy.sh
 ```
 
@@ -770,9 +608,9 @@ sleep 10
 
 ## 📊 Monitoring
 
-### Check System Health
+### System Health
 ```bash
-# All pods running?
+# Pod status
 kubectl get pods -n taskboard
 
 # Resource usage
@@ -787,89 +625,62 @@ kubectl get events -n taskboard --sort-by='.lastTimestamp'
 
 ### Live Logs
 ```bash
-# API Gateway
+# API Gateway logs
 kubectl logs -n taskboard -l app=api-gateway -f
 
-# Task Service
+# Task Service logs
 kubectl logs -n taskboard -l app=task-service -f
 
-# PostgreSQL
+# PostgreSQL logs
 kubectl logs -n taskboard -l app=taskboard-db -f
 
-# NATS
+# NATS logs
 kubectl logs -n taskboard nats-0 -f
 ```
 
 ### Metrics
 
-Check connected WebSocket clients:
+**WebSocket connections:**
 ```bash
 kubectl logs -n taskboard -l app=api-gateway | grep "Total clients"
 ```
 
-Check event throughput:
+**Event throughput:**
 ```bash
 kubectl logs -n taskboard -l app=task-service | grep "📤" | wc -l
 ```
 
 ---
 
-## 🎓 Learning Resources
+## 🎓 Next Steps
 
-### Concepts to Understand
+### Feature Enhancements
 
-1. **Kubernetes Fundamentals**
-   - Pods, Deployments, Services
-   - ConfigMaps, Secrets
-   - Namespaces, Labels, Selectors
-
-2. **Microservices Patterns**
-   - API Gateway pattern
-   - Event-driven architecture
-   - Pub/Sub messaging
-
-3. **Real-Time Systems**
-   - WebSocket protocol
-   - Connection lifecycle
-   - Keepalive mechanisms
-
-4. **gRPC**
-   - Protocol Buffers
-   - Service definitions
-   - Streaming
-
-5. **Container Orchestration**
-   - Helm charts
-   - Helmfile
-   - Infrastructure as Code
-
-### Next Steps
-
-**Enhance the system:**
 - [ ] Add authentication (JWT)
 - [ ] Implement boards CRUD
 - [ ] Add user management
 - [ ] Implement task assignment
 - [ ] Add file attachments
-- [ ] Implement search
-- [ ] Add notifications
+- [ ] Implement search functionality
+- [ ] Add email notifications
 - [ ] Implement audit logs
 
-**Production readiness:**
+### Production Readiness
+
 - [ ] Add Prometheus metrics
 - [ ] Implement distributed tracing (Jaeger)
 - [ ] Set up log aggregation (Loki)
-- [ ] Add health checks
+- [ ] Add comprehensive health checks
 - [ ] Implement rate limiting
 - [ ] Add circuit breakers
-- [ ] Set up backup/restore
+- [ ] Set up automated backups
 - [ ] Implement disaster recovery
 
 ---
 
 ## 📝 License
 
-MIT License - see [LICENSE](LICENSE) file for details
+MIT License - see LICENSE file for details
 
 ---
 
@@ -878,14 +689,14 @@ MIT License - see [LICENSE](LICENSE) file for details
 Contributions are welcome! Please:
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Commit your changes: `git commit -m 'Add amazing feature'`
+4. Push to the branch: `git push origin feature/amazing-feature`
 5. Open a Pull Request
 
 ---
 
-## 👥 Authors
+## 👥 Author
 
 **Paul Ohrt** - [@zaouldyeck](https://github.com/zaouldyeck)
 
@@ -905,3 +716,4 @@ Built with:
 
 ---
 
+⭐ **If this project helped you, please give it a star!**
