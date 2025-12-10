@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Taskboard - Real-Time Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        #status {
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        .connected { background: #4CAF50; color: white; }
+        .disconnected { background: #f44336; color: white; }
+        .connecting { background: #FF9800; color: white; }
+        
+        #events {
+            border: 1px solid #ccc;
+            padding: 10px;
+            height: 400px;
+            overflow-y: auto;
+            background: #f5f5f5;
+            margin-bottom: 20px;
+        }
+        .event {
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 4px;
+            background: white;
+            border-left: 4px solid #2196F3;
+            animation: highlight 1s;
+        }
+        .event.created { border-left-color: #4CAF50; }
+        .event.updated { border-left-color: #FF9800; }
+        .event.deleted { border-left-color: #f44336; }
+        
+        @keyframes highlight {
+            from { background: #ffeb3b; }
+            to { background: white; }
+        }
+        
+        input, button {
+            padding: 10px;
+            margin: 5px;
+            font-size: 14px;
+        }
+        button {
+            background: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover { background: #1976D2; }
+    </style>
+</head>
+<body>
+    <h1>🚀 Taskboard Real-Time Test</h1>
+    
+    <div id="status" class="connecting">Connecting to WebSocket...</div>
+    
+    <h2>Live Events</h2>
+    <div id="events"></div>
+    
+    <h2>Create Task</h2>
+    <input id="taskTitle" type="text" placeholder="Task title" style="width: 300px;">
+    <button onclick="createTask()">Create Task</button>
+    <button onclick="clearEvents()">Clear Events</button>
+    
+    <script>
+        const eventsDiv = document.getElementById('events');
+        const statusDiv = document.getElementById('status');
+        
+        // Connect to WebSocket
+        const ws = new WebSocket('ws://localhost:8080/ws');
+        
+        ws.onopen = () => {
+            statusDiv.textContent = '✅ Connected to WebSocket';
+            statusDiv.className = 'connected';
+            console.log('WebSocket connected');
+        };
+        
+        ws.onmessage = (event) => {
+            console.log('Event received:', event.data);
+            
+            try {
+                const data = JSON.parse(event.data);
+                displayEvent(data);
+            } catch (e) {
+                console.error('Failed to parse event:', e);
+            }
+        };
+        
+        ws.onerror = (error) => {
+            console.error('WebSocket error:', error);
+            statusDiv.textContent = '❌ WebSocket Error';
+            statusDiv.className = 'disconnected';
+        };
+        
+        ws.onclose = () => {
+            console.log('WebSocket disconnected');
+            statusDiv.textContent = '⚠️ Disconnected';
+            statusDiv.className = 'disconnected';
+        };
+        
+        function displayEvent(data) {
+            const eventDiv = document.createElement('div');
+            eventDiv.className = `event ${data.type}`;
+            
+            const time = new Date(data.timestamp * 1000).toLocaleTimeString();
+            const emoji = {
+                created: '➕',
+                updated: '✏️',
+                deleted: '🗑️'
+            }[data.type] || '📝';
+            
+            eventDiv.innerHTML = `
+                <strong>${emoji} ${data.type.toUpperCase()}</strong> 
+                [${time}]
+                <br>
+                Task ID: ${data.task_id} | Board: ${data.board_id}
+                ${data.title ? `| "${data.title}"` : ''}
+                ${data.completed !== undefined ? `| Completed: ${data.completed}` : ''}
+            `;
+            
+            eventsDiv.insertBefore(eventDiv, eventsDiv.firstChild);
+        }
+        
+        async function createTask() {
+            const title = document.getElementById('taskTitle').value;
+            if (!title) {
+                alert('Please enter a task title');
+                return;
+            }
+            
+            try {
+                const response = await fetch('http://localhost:8080/api/tasks', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        board_id: 1,
+                        title: title,
+                        description: 'Created via WebSocket test page',
+                        created_by: 100
+                    })
+                });
+                
+                if (response.ok) {
+                    document.getElementById('taskTitle').value = '';
+                    console.log('Task created successfully');
+                } else {
+                    alert('Failed to create task: ' + response.statusText);
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+        
+        function clearEvents() {
+            eventsDiv.innerHTML = '';
+        }
+        
+        // Allow Enter key to create task
+        document.getElementById('taskTitle').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                createTask();
+            }
+        });
+    </script>
+</body>
+</html>

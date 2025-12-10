@@ -1,6 +1,6 @@
 # Production environment
 
-imageTag: latest
+imageTag: v1.0.0
 
 # Task service overrides - at root level
 replicaCount: 3

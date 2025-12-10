@@ -2,9 +2,12 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
+	"time"
 
+	"github.com/nats-io/nats.go"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -20,10 +23,54 @@ type TaskService struct {
 	pb.UnimplementedTaskServiceServer
 
 	repo repository.Repository
+	nats *nats.Conn
 }
 
-func NewTaskService(repo repository.Repository) *TaskService {
-	return &TaskService{repo: repo}
+func NewTaskService(repo repository.Repository, nc *nats.Conn) *TaskService {
+	return &TaskService{
+		repo: repo,
+		nats: nc,
+	}
+}
+
+// TaskEvent represents an event published to NATS message broker.
+type TaskEvent struct {
+	Type      string `json:"type"` // Kind of action: "created", "updated", "deleted".
+	TaskId    int64  `json:"task_id"`
+	BoardId   int64  `json:"board_id"`
+	Title     string `json:"title"`
+	Completed *bool  `json:"completed"`
+	Timestamp int64  `json:"timestamp"`
+}
+
+func (s *TaskService) publishEvent(eventType string, task *repository.Task) {
+	event := TaskEvent{
+		Type:      eventType,
+		TaskId:    task.ID,
+		BoardId:   task.BoardID,
+		Title:     task.Title,
+		Timestamp: time.Now().Unix(),
+	}
+
+	// Allows for setting of optional Completed status of task in event.
+	if task.Completed {
+		completed := true
+		event.Completed = &completed
+	}
+
+	eventJSON, err := json.Marshal(event)
+	if err != nil {
+		log.Printf("ERROR: Failed to marshal event: %v", err)
+		return
+	}
+
+	subject := fmt.Sprintf("tasks.%s", eventType)
+	if err := s.nats.Publish(subject, eventJSON); err != nil {
+		log.Printf("ERROR: Failed to publish event to %s: %v", subject, err)
+		return
+	}
+
+	log.Printf("📤 Published event: %s (task_id=%d, board_id=%d)", subject, task.ID, task.BoardID)
 }
 
 func (s *TaskService) CreateTask(ctx context.Context, req *pb.CreateTaskRequest) (*pb.CreateTaskResponse, error) {
@@ -52,6 +99,9 @@ func (s *TaskService) CreateTask(ctx context.Context, req *pb.CreateTaskRequest)
 		// Return gRPC error for internal error.
 		return nil, status.Error(codes.Internal, "failed to create task")
 	}
+
+	// Publish "created" event to NATS for message queuing.
+	s.publishEvent("created", domainTask)
 
 	// Return protobuf response for gRPC API.
 	pbTask := domainToProto(domainTask)
@@ -169,6 +219,9 @@ func (s *TaskService) UpdateTask(ctx context.Context, req *pb.UpdateTaskRequest)
 		return nil, status.Error(codes.Internal, "failed to update task")
 	}
 
+	// Publish "update" event to NATS for message queuing.
+	s.publishEvent("updated", existingTask)
+
 	return &pb.UpdateTaskResponse{
 		Task: domainToProto(existingTask),
 	}, nil
@@ -179,7 +232,17 @@ func (s *TaskService) DeleteTask(ctx context.Context, req *pb.DeleteTaskRequest)
 		return nil, status.Error(codes.InvalidArgument, "id is required")
 	}
 
-	err := s.repo.Delete(ctx, req.Id)
+	// Capture task info for use with "deleted" event in NATS message broker.
+	task, err := s.repo.GetByID(ctx, req.Id)
+	if err != nil {
+		if err.Error() == "task not found" {
+			return nil, status.Error(codes.NotFound, "task not found")
+		}
+		fmt.Printf("Failed to get task: %v\n", err)
+		return nil, status.Error(codes.Internal, "failed to get task")
+	}
+
+	err = s.repo.Delete(ctx, req.Id)
 	if err != nil {
 		if err.Error() == "task not found" {
 			return nil, status.Error(codes.NotFound, "task not found")
@@ -187,6 +250,9 @@ func (s *TaskService) DeleteTask(ctx context.Context, req *pb.DeleteTaskRequest)
 		fmt.Printf("Failed to delete task: %v\n", err)
 		return nil, status.Error(codes.Internal, "failed to delete task")
 	}
+
+	// Publish "deleted" event to NATS for message queuing.
+	s.publishEvent("deleted", task)
 
 	return &pb.DeleteTaskResponse{
 		Success: true,

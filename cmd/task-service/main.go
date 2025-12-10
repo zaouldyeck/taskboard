@@ -7,7 +7,9 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
+	"github.com/nats-io/nats.go"
 	pb "github.com/zaouldyeck/taskboard/api/proto/task/v1"
 	"github.com/zaouldyeck/taskboard/internal/database"
 	"github.com/zaouldyeck/taskboard/internal/task/repository"
@@ -45,9 +47,30 @@ func main() {
 	}
 	log.Println("DB schema initialized.")
 
+	// Connect to NATS.
+	natsURL := getEnv("NATS_URL", "nats://nats:4222")
+	log.Printf("Connecting to NATS at %s...", natsURL)
+
+	nc, err := nats.Connect(natsURL,
+		nats.Timeout(10*time.Second),
+		nats.ReconnectWait(2*time.Second),
+		nats.MaxReconnects(-1), // Forever reconnect.
+		nats.DisconnectErrHandler(func(nc *nats.Conn, err error) {
+			log.Printf("NATS disconnected: %v", err)
+		}),
+		nats.ReconnectHandler(func(nc *nats.Conn) {
+			log.Printf("NATS reconnected to %s", nc.ConnectedUrl())
+		}),
+	)
+	if err != nil {
+		log.Fatalf("Failed to connect to NATS: %v", err)
+	}
+	defer nc.Close()
+	log.Printf("Connected to NATS successfully. Server: %s", nc.ConnectedUrl())
+
 	// Bootstrap postgres repo and services.
 	repo := repository.NewPostgresRepository(db)
-	taskService := service.NewTaskService(repo)
+	taskService := service.NewTaskService(repo, nc)
 	grpcServer := grpc.NewServer()
 	pb.RegisterTaskServiceServer(grpcServer, taskService)
 	reflection.Register(grpcServer)

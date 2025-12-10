@@ -1,0 +1,27 @@
+replicaCount: 1
+
+image:
+  repository: nats
+  tag: "2.10-alpine"
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 4222
+
+# JetStream for persistance.
+jetstream:
+  enabled: false
+
+# NATS configuration.
+config:
+  cluster:
+    enabled: false
+
+resources:
+  limits:
+    cpu: 200m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi

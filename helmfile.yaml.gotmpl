@@ -27,6 +27,16 @@ releases:
     labels:
       app: taskboard
       component: database
+  
+  # NATS Messaging
+  - name: taskboard-nats
+    namespace: taskboard
+    chart: ./deploy/helm/nats/
+    values:
+      - ./deploy/helm/nats/values.yaml
+    labels:
+      app: taskboard
+      component: messaging
 
   # Task Service (gRPC)
   - name: taskboard
@@ -37,6 +47,7 @@ releases:
       - ./deploy/environments/{{ .Environment.Name }}.yaml
     needs:
       - taskboard/taskboard-db
+      - taskboard/taskboard-nats
     set:
       - name: image.repository
         value: {{ requiredEnv "REGISTRY_IP" }}:5000/taskboard-task-service
@@ -56,6 +67,7 @@ releases:
       - ./deploy/environments/{{ .Environment.Name }}.yaml
     needs:
       - taskboard/taskboard
+      - taskboard/taskboard-nats
     set:
       - name: image.repository
         value: {{ requiredEnv "REGISTRY_IP" }}:5000/taskboard-api-gateway
