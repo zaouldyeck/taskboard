@@ -1,6 +1,8 @@
 # 🚀 Taskboard - Real-Time Microservices Application
 
-A basic real-time task management system built with Go microservices, Kubernetes, NATS messaging, and WebSocket for live updates.
+A basic real-time task management system built with Go microservices, Kubernetes (Talos), NATS messaging, and WebSocket for live updates.
+
+Instructions for deploying it locally on a single node Docker-based Talos cluster included.
 
 ## 📋 Table of Contents
 
