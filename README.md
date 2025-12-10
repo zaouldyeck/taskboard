@@ -89,7 +89,7 @@ A production-ready, real-time task management system built with Go microservices
 Ensure you have the following installed:
 
 - Docker 20.10+
-- Go 1.21+
+- Go 1.23+
 - Helm 3.12+
 - Helmfile 0.157+
 - kubectl 1.28+
@@ -117,8 +117,8 @@ curl -fsSL https://get.docker.com -o get-docker.sh
 sudo sh get-docker.sh
 
 # Go
-wget https://go.dev/dl/go1.21.5.linux-amd64.tar.gz
-sudo tar -C /usr/local -xzf go1.21.5.linux-amd64.tar.gz
+wget https://go.dev/dl/go1.23.5.linux-amd64.tar.gz
+sudo tar -C /usr/local -xzf go1.23.5.linux-amd64.tar.gz
 export PATH=$PATH:/usr/local/go/bin
 
 # Helm
