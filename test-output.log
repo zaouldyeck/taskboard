@@ -1,0 +1,51 @@
+=== RUN   TestNew
+=== RUN   TestNew/valid_user
+    user_test.go:24: ✅ Created user with ID: a840e5bb-dbf4-415f-b1a8-d0b0ad6d8738
+=== RUN   TestNew/invalid_email
+    user_test.go:34: ✅ Correctly rejected invalid email
+=== RUN   TestNew/weak_password
+    user_test.go:44: ✅ Correctly rejected weak password
+=== RUN   TestNew/empty_username
+    user_test.go:54: ✅ Correctly rejected empty username
+--- PASS: TestNew (0.05s)
+    --- PASS: TestNew/valid_user (0.05s)
+    --- PASS: TestNew/invalid_email (0.00s)
+    --- PASS: TestNew/weak_password (0.00s)
+    --- PASS: TestNew/empty_username (0.00s)
+=== RUN   TestAuthenticate
+=== RUN   TestAuthenticate/correct_password
+    user_test.go:70: ✅ Correct password authenticated
+=== RUN   TestAuthenticate/wrong_password
+    user_test.go:78: ✅ Wrong password rejected
+=== RUN   TestAuthenticate/empty_password
+    user_test.go:86: ✅ Empty password rejected
+--- PASS: TestAuthenticate (0.19s)
+    --- PASS: TestAuthenticate/correct_password (0.05s)
+    --- PASS: TestAuthenticate/wrong_password (0.05s)
+    --- PASS: TestAuthenticate/empty_password (0.04s)
+=== RUN   TestUnmarshal
+    user_test.go:126: ✅ Successfully reconstructed user from database format
+--- PASS: TestUnmarshal (0.09s)
+=== RUN   TestUnmarshalInvalidData
+=== RUN   TestUnmarshalInvalidData/empty_id
+=== RUN   TestUnmarshalInvalidData/empty_email
+=== NAME  TestUnmarshalInvalidData
+    user_test.go:144: ✅ Correctly rejected invalid unmarshal data
+--- PASS: TestUnmarshalInvalidData (0.00s)
+    --- PASS: TestUnmarshalInvalidData/empty_id (0.00s)
+    --- PASS: TestUnmarshalInvalidData/empty_email (0.00s)
+=== RUN   TestStoreCreate
+    userdb_test.go:64: failed to create schema: pq: column "username" does not exist
+--- FAIL: TestStoreCreate (0.02s)
+=== RUN   TestStoreQueryByEmail
+    userdb_test.go:107: failed to create schema: pq: column "username" does not exist
+--- FAIL: TestStoreQueryByEmail (0.01s)
+=== RUN   TestStoreQueryById
+    userdb_test.go:159: failed to create schema: pq: column "username" does not exist
+--- FAIL: TestStoreQueryById (0.01s)
+=== RUN   TestStoreQueryByUsername
+    userdb_test.go:186: failed to create schema: pq: column "username" does not exist
+--- FAIL: TestStoreQueryByUsername (0.01s)
+FAIL
+FAIL	github.com/zaouldyeck/taskboard/business/core/user	0.633s
+FAIL
