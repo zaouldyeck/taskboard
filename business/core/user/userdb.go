@@ -45,7 +45,7 @@ func (s *Store) Create(ctx context.Context, user User) error {
 	_, err := s.db.ExecContext(
 		ctx,
 		q,
-		user.ID(),
+		user.Id(),
 		user.Email(),
 		user.Username(),
 		user.PasswordHash(),

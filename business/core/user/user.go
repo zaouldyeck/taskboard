@@ -71,7 +71,7 @@ func (u User) Authenticate(password string) bool {
 
 // Getter functions for uid, email and username below.
 
-func (u User) ID() string {
+func (u User) Id() string {
 	return u.id
 }
 

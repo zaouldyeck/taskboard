@@ -1,0 +1,75 @@
+syntax = "proto3";
+
+package user.v1;
+
+option go_package = "github.com/zaouldyeck/taskboard/api/proto/user/v1";
+
+// UserService handles user authentication and management.
+service UserService {
+  // Register creates user account.
+  rpc Register(RegisterRequest) returns (RegisterResponse);
+
+  // Login auths a user and returns token.
+  rpc Login(LoginRequest) returns (LoginResponse);
+
+  // ValidateToken checks if JWT is valid.
+  rpc ValidateToken(ValidateTokenRequest) returns (ValidateTokenResponse);
+
+  // GetUser retrieves user info by ID.
+  rpc GetUser(GetUserRequest) returns (GetUserResponse);
+}
+
+// User is a user in the system.
+message User {
+  string id = 1;
+  string email = 2;
+  string username = 3;
+  int64 created_at = 4;
+}
+
+// RegisterRequest is user registration data.
+message RegisterRequest {
+  string email = 1;
+  string username = 2;
+  string password = 3;
+}
+
+// RegisterResponse returns user and auth token.
+message RegisterResponse {
+  User user = 1;
+  string token = 2;
+}
+
+// LoginRequest contains credentials for authentication.
+message LoginRequest {
+  string email = 1;
+  string password = 2;
+}
+
+// LoginResponse returns user info and auth token.
+message LoginResponse {
+  User user = 1;
+  string token = 2;
+}
+
+// ValidateTokenRequest contains the token to validate.
+message ValidateTokenRequest {
+  string token = 1;
+}
+
+// ValidateTokenResponse returns validation result and user info.
+message ValidateTokenResponse {
+  bool valid = 1;
+  string user_id = 2;
+  string email = 3;
+}
+
+// GetUserRequest contains the user ID to retrieve.
+message GetUserRequest {
+  string id = 1;
+}
+
+// GetUserResponse returns the user information.
+message GetUserResponse {
+  User user = 1;
+}

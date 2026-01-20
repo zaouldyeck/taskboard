@@ -17,11 +17,11 @@ func TestNew(t *testing.T) {
 			t.Errorf("expected username testuser, got: %s", user.Username())
 		}
 
-		if user.ID() == "" {
+		if user.Id() == "" {
 			t.Error("expected ID to be generated")
 		}
 
-		t.Logf("✅ Created user with ID: %s", user.ID())
+		t.Logf("✅ Created user with ID: %s", user.Id())
 	})
 
 	t.Run("invalid email", func(t *testing.T) {
@@ -96,7 +96,7 @@ func TestUnmarshal(t *testing.T) {
 
 	// Unmarshal. Reconstructs from DB data.
 	reconstructed, err := Unmarshal(
-		original.ID(),
+		original.Id(),
 		original.Email(),
 		original.Username(),
 		original.PasswordHash(),
@@ -106,7 +106,7 @@ func TestUnmarshal(t *testing.T) {
 	}
 
 	// Verify fields.
-	if reconstructed.ID() != original.ID() {
+	if reconstructed.Id() != original.Id() {
 		t.Error("IDs don't match")
 	}
 

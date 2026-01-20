@@ -84,7 +84,7 @@ func TestStoreCreate(t *testing.T) {
 			t.Fatalf("failed to store user in DB: %v", err)
 		}
 
-		t.Logf("✅ Stored user with ID: %s", user.ID())
+		t.Logf("✅ Stored user with ID: %s", user.Id())
 	})
 
 	t.Run("reject duplicate email", func(t *testing.T) {
@@ -126,8 +126,8 @@ func TestStoreQueryByEmail(t *testing.T) {
 		}
 
 		// Verify all fields match.
-		if found.ID() != original.ID() {
-			t.Errorf("ID mismatch: expected %s, got %s", original.ID(), found.ID())
+		if found.Id() != original.Id() {
+			t.Errorf("ID mismatch: expected %s, got %s", original.Id(), found.Id())
 		}
 
 		if found.Email() != original.Email() {
@@ -171,7 +171,7 @@ func TestStoreQueryById(t *testing.T) {
 	store.Create(ctx, original)
 
 	// Query by id.
-	found, err := store.QueryById(ctx, original.ID())
+	found, err := store.QueryById(ctx, original.Id())
 	if err != nil {
 		t.Fatalf("failed to query user: %v", err)
 	}
