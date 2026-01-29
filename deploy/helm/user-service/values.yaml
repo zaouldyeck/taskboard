@@ -1,0 +1,50 @@
+# Default values for user-service.
+
+replicaCount: 2
+
+# Container image.
+image:
+  repository: localhost:5010/taskboard-user-service
+  tag: "latest"
+  pullPolicy: Always
+
+# Service config.
+service:
+  type: ClusterIP
+  port: 50052
+  annotations: {}
+
+# Resource limits. (override in environment)
+resources:
+  requests:
+    memory: "128Mi"
+    cpu: "100m"
+  limits:
+    memory: "256Mi"
+    cpu: "200m"
+
+# Database config.
+database:
+  host: "taskboard-db-postgres"
+  port: 5432
+  name: "taskboard"
+  user: "taskboard"
+  password: "taskboard"
+  sslmode: "disable"
+
+# JWT configuration
+jwt:
+  secret: "dev-secret-change-in-production"
+  expiryHours: "24"
+
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+
+# Pod security context (empty for baseline compatibility)
+podSecurityContext: {}
+
+# Container security context (empty for baseline compatibility)
+securityContext: {}

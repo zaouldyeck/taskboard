@@ -200,6 +200,14 @@ docker build -t taskboard-api-gateway:latest -f cmd/api-gateway/Dockerfile . || 
 docker tag taskboard-api-gateway:latest localhost:5010/taskboard-api-gateway:latest
 docker push localhost:5010/taskboard-api-gateway:latest
 
+echo "  - Building user-service..."
+docker build -t taskboard-user-service:latest -f cmd/user-service/Dockerfile . || {
+    echo -e "${RED}❌ Failed to build user-service${NC}"
+    exit 1
+}
+docker tag taskboard-user-service:latest localhost:5010/taskboard-user-service:latest
+docker push localhost:5010/taskboard-user-service:latest
+
 echo "✅ Images pushed to registry"
 
 # Step 7: Deploy with Helmfile
@@ -214,6 +222,7 @@ echo -e "\n${YELLOW}⏳ Waiting for pods to be ready...${NC}"
 kubectl wait --for=condition=ready pod -l app=taskboard-db -n taskboard --timeout=120s 2>/dev/null || true
 kubectl wait --for=condition=ready pod -l app=task-service -n taskboard --timeout=120s 2>/dev/null || true
 kubectl wait --for=condition=ready pod -l app=api-gateway -n taskboard --timeout=120s 2>/dev/null || true
+kubectl wait --for=condition=ready pod -l app=user-service -n taskboard --timeout=120s 2>/dev/null || true
 
 # Step 9: Display status
 echo -e "\n${GREEN}✅ Deployment complete!${NC}"

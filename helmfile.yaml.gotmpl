@@ -58,6 +58,25 @@ releases:
       component: service
       environment: {{ .Environment.Name }}
 
+  # User Service (Authentication)
+  - name: taskboard-user-service
+    namespace: taskboard
+    chart: ./deploy/helm/user-service
+    values:
+      - ./deploy/helm/user-service/values.yaml
+      - ./deploy/environments/{{ .Environment.Name }}.yaml
+    needs:
+      - taskboard/taskboard-db
+    set:
+      - name: image.repository
+        value: {{ requiredEnv "REGISTRY_IP" }}:5000/taskboard-user-service
+      - name: image.tag
+        value: {{ .Environment.Values | get "imageTag" "latest" }}
+    labels:
+      app: taskboard
+      component: user-service
+      environment: {{ .Environment.Name }}
+
   # API Gateway (HTTP)
   - name: taskboard-api-gateway
     namespace: taskboard
