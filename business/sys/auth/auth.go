@@ -15,7 +15,7 @@ type Auth struct {
 
 // TokenClaims is data payload stored in the JWT.
 type TokenClaims struct {
-	UserId int64  `json:"user_id"`
+	UserId string `json:"user_id"`
 	Email  string `json:"email"`
 	jwt.RegisteredClaims
 }
@@ -32,7 +32,7 @@ func NewAuth(secret string) *Auth {
 }
 
 // GenerateToken creates new JWT for user.
-func (a *Auth) GenerateToken(userId int64, email string, duration time.Duration) (string, error) {
+func (a *Auth) GenerateToken(userId string, email string, duration time.Duration) (string, error) {
 	// Create claims with data payload.
 	now := time.Now()
 	claims := &TokenClaims{

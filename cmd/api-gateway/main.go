@@ -17,6 +17,7 @@ import (
 
 	"github.com/zaouldyeck/taskboard/internal/gateway/grpcclient"
 	"github.com/zaouldyeck/taskboard/internal/gateway/handlers"
+	"github.com/zaouldyeck/taskboard/internal/gateway/middleware"
 	ws "github.com/zaouldyeck/taskboard/internal/gateway/websocket"
 )
 
@@ -32,10 +33,15 @@ var upgrader = websocket.Upgrader{
 // // HELPER FUNCTIONS // //
 
 // setupRoutes configures HTTP routes.
-func setupRoutes(taskHandler *handlers.TaskHandler, hub *ws.Hub) *http.ServeMux {
+func setupRoutes(taskHandler *handlers.TaskHandler, userHandler *handlers.UserHandler,
+	userClient *grpcclient.UserClient, hub *ws.Hub,
+) *http.ServeMux {
 	mux := http.NewServeMux()
 
-	// Health check endpoint
+	// Create auth middleware to protect task routes.
+	authMW := middleware.AuthMiddleware(userClient)
+
+	// Health check endpoint.
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))
@@ -47,8 +53,58 @@ func setupRoutes(taskHandler *handlers.TaskHandler, hub *ws.Hub) *http.ServeMux 
 	})
 	log.Println("✅ WebSocket endpoint registered at /ws")
 
-	// Task endpoints - /api/tasks
-	mux.HandleFunc("/api/tasks", func(w http.ResponseWriter, r *http.Request) {
+	// Task endpoints (/api/tasks).
+	mux.Handle("/api/tasks", authMW(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Enable CORS for development
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+		// Handle preflight requests.
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		// Route based on HTTP method.
+		switch r.Method {
+		case http.MethodGet:
+			taskHandler.ListTasks(w, r)
+		case http.MethodPost:
+			taskHandler.CreateTask(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})))
+
+	// Task endpoints (/api/tasks/:id).
+	mux.Handle("/api/tasks/", authMW(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Enable CORS
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+		// Handle preflight requests.
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		// Route based on HTTP method.
+		switch r.Method {
+		case http.MethodGet:
+			taskHandler.GetTask(w, r)
+		case http.MethodPut:
+			taskHandler.UpdateTask(w, r)
+		case http.MethodDelete:
+			taskHandler.DeleteTask(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})))
+
+	// User-service endpoints (/api/register).
+	mux.HandleFunc("/api/register", func(w http.ResponseWriter, r *http.Request) {
 		// Enable CORS for development
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
@@ -61,19 +117,16 @@ func setupRoutes(taskHandler *handlers.TaskHandler, hub *ws.Hub) *http.ServeMux 
 		}
 
 		// Route based on HTTP method
-		switch r.Method {
-		case http.MethodGet:
-			taskHandler.ListTasks(w, r)
-		case http.MethodPost:
-			taskHandler.CreateTask(w, r)
-		default:
+		if r.Method == http.MethodPost {
+			userHandler.Register(w, r)
+		} else {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
 	})
 
-	// Task endpoints - /api/tasks/:id
-	mux.HandleFunc("/api/tasks/", func(w http.ResponseWriter, r *http.Request) {
-		// Enable CORS
+	// User-service endpoints - /api/login
+	mux.HandleFunc("/api/login", func(w http.ResponseWriter, r *http.Request) {
+		// Enable CORS for development
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
@@ -85,14 +138,51 @@ func setupRoutes(taskHandler *handlers.TaskHandler, hub *ws.Hub) *http.ServeMux 
 		}
 
 		// Route based on HTTP method
-		switch r.Method {
-		case http.MethodGet:
-			taskHandler.GetTask(w, r)
-		case http.MethodPut:
-			taskHandler.UpdateTask(w, r)
-		case http.MethodDelete:
-			taskHandler.DeleteTask(w, r)
-		default:
+		if r.Method == http.MethodPost {
+			userHandler.Login(w, r)
+		} else {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+
+	// User-service endpoints - /api/validate
+	mux.HandleFunc("/api/validate", func(w http.ResponseWriter, r *http.Request) {
+		// Enable CORS for development
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+		// Handle preflight requests
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		// Route based on HTTP method
+		if r.Method == http.MethodPost {
+			userHandler.ValidateToken(w, r)
+		} else {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+
+	// User-service endpoints - /api/me
+	mux.HandleFunc("/api/me", func(w http.ResponseWriter, r *http.Request) {
+		// Enable CORS for development
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+		// Handle preflight requests
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		// Route based on HTTP method
+		if r.Method == http.MethodGet {
+			userHandler.GetCurrentUser(w, r)
+		} else {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
 	})
@@ -170,6 +260,7 @@ func main() {
 	// Read config from env vars.
 	httpPort := getEnv("HTTP_PORT", "8080")
 	taskServiceAddr := getEnv("TASK_SERVICE_ADDR", "localhost:50051")
+	userServiceAddr := getEnv("USER_SERVICE_ADDR", "localhost:50052")
 
 	// Connect NATS message broker.
 	natsURL := getEnv("NATS_URL", "nats://nats:4222")
@@ -197,7 +288,7 @@ func main() {
 	go hub.Run()
 	log.Println("✅ WebSocket Hub started")
 
-	// Init gRPC client.
+	// Init gRPC clients.
 	log.Printf("Connecting to task svc at %s...", taskServiceAddr)
 	taskClient, err := grpcclient.NewTaskClient(taskServiceAddr)
 	if err != nil {
@@ -205,11 +296,19 @@ func main() {
 	}
 	defer taskClient.Close()
 
+	log.Printf("Connecting to user svc at %s...", userServiceAddr)
+	userClient, err := grpcclient.NewUserClient(userServiceAddr)
+	if err != nil {
+		log.Fatalf("Failed to create user client: %v", err)
+	}
+	defer userClient.Close()
+
 	// Init handlers.
 	taskHandler := handlers.NewTaskHandler(taskClient)
+	userHandler := handlers.NewUserHandler(userClient)
 
 	// Setup HTTP router.
-	mux := setupRoutes(taskHandler, hub)
+	mux := setupRoutes(taskHandler, userHandler, userClient, hub)
 
 	// Create HTTP server.
 	server := &http.Server{

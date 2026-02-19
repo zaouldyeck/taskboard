@@ -59,9 +59,7 @@ func (c *UserClient) Close() error {
 	return c.conn.Close()
 }
 
-func (c *UserClient) Register(ctx context.Context, email, username, password string) (*AuthResponse,
-	error,
-) {
+func (c *UserClient) Register(ctx context.Context, email, username, password string) (*AuthResponse, error) {
 	resp, err := c.client.Register(ctx, &pb.RegisterRequest{
 		Email:    email,
 		Username: username,

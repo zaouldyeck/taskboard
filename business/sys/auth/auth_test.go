@@ -8,7 +8,7 @@ import (
 func TestGenerateToken(t *testing.T) {
 	auth := NewAuth("test-secret-key")
 
-	token, err := auth.GenerateToken(123, "paul@example.com", 24*time.Hour)
+	token, err := auth.GenerateToken("bac-123-def-456", "paul@example.com", 24*time.Hour)
 	if err != nil {
 		t.Fatalf("failed to generate token: %v", err)
 	}
@@ -24,7 +24,7 @@ func TestValidateToken(t *testing.T) {
 	auth := NewAuth("test-secret-key")
 
 	// Generate a JWT.
-	token, _ := auth.GenerateToken(123, "paul@example.com", 24*time.Hour)
+	token, _ := auth.GenerateToken("bac-123-def-456", "paul@example.com", 24*time.Hour)
 
 	// Validate the JWT.
 	claims, err := auth.ValidateToken(token)
@@ -33,7 +33,7 @@ func TestValidateToken(t *testing.T) {
 	}
 
 	// Verify claims.
-	if claims.UserId != 123 {
+	if claims.UserId != "bac-123-def-456" {
 		t.Errorf("expected user_id 123, got %d", claims.UserId)
 	}
 
@@ -60,7 +60,7 @@ func TestValidateExpiredToken(t *testing.T) {
 	auth := NewAuth("test-secret-key")
 
 	// Generate JWT that expires immediately.
-	token, _ := auth.GenerateToken(123, "paul@example.com", -1*time.Second)
+	token, _ := auth.GenerateToken("bac-123-def-456", "paul@example.com", -1*time.Second)
 
 	// Try to validate expired token.
 	_, err := auth.ValidateToken(token)
@@ -76,7 +76,7 @@ func TestValidateWrongSecret(t *testing.T) {
 	auth2 := NewAuth("secret-2")
 
 	// Generate with auth1.
-	token, _ := auth1.GenerateToken(123, "paul@example.com", 24*time.Hour)
+	token, _ := auth1.GenerateToken("bac-123-def-456", "paul@example.com", 24*time.Hour)
 
 	// Try to validate with wrong secret.
 	_, err := auth2.ValidateToken(token)

@@ -27,6 +27,8 @@ spec:
           value: "8080"
         - name: TASK_SERVICE_ADDR
           value: "taskboard-task-service:50051"
+        - name: USER_SERVICE_ADDR
+          value: "taskboard-user-service:50052"
         resources:
           limits:
             cpu: 200m

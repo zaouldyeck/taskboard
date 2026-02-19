@@ -34,19 +34,6 @@ func NewService(cfg Config) *Service {
 	}
 }
 
-// parseUserId converts string UUID to int64 for JWT claims.
-func parseUserId(id string) int64 {
-	// For LAB only. Simple hashing of UUID.
-	hash := int64(0)
-	for _, c := range id {
-		hash = hash*31 + int64(c)
-	}
-	if hash < 0 {
-		hash = -hash
-	}
-	return hash
-}
-
 // Register creates a new user.
 func (s *Service) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.RegisterResponse, error) {
 	// Validate input.
@@ -84,7 +71,7 @@ func (s *Service) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.Re
 	}
 
 	// Generate JWT.
-	token, err := s.auth.GenerateToken(parseUserId(usr.Id()), usr.Email(), s.tokenExpiry)
+	token, err := s.auth.GenerateToken(usr.Id(), usr.Email(), s.tokenExpiry)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to generate token: %v", err))
 	}
@@ -125,7 +112,7 @@ func (s *Service) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginRes
 	}
 
 	// Generate JWT.
-	token, err := s.auth.GenerateToken(parseUserId(usr.Id()), usr.Email(), s.tokenExpiry)
+	token, err := s.auth.GenerateToken(usr.Id(), usr.Email(), s.tokenExpiry)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to generate token: %v", err))
 	}
@@ -156,7 +143,7 @@ func (s *Service) ValidateToken(ctx context.Context, req *pb.ValidateTokenReques
 	// Validation result.
 	return &pb.ValidateTokenResponse{
 		Valid:  true,
-		UserId: fmt.Sprintf("%d", claims.UserId),
+		UserId: claims.UserId,
 		Email:  claims.Email,
 	}, nil
 }
