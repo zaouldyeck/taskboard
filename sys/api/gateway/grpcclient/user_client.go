@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	pb "github.com/zaouldyeck/taskboard/api/proto/user/v1"
+	pb "github.com/zaouldyeck/taskboard/proto/user/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )

@@ -2,10 +2,10 @@ syntax = "proto3";
 
 package task.v1;
 
-option go_package = "github.com/zaouldyeck/taskboard/pkg/api/task/v1;taskv1";
-
 // Import std protobuf types.
 import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/zaouldyeck/taskboard/proto/task/v1";
 
 // Task is a single task.
 message Task {
@@ -45,7 +45,7 @@ message ListTasksRequest {
   // Filter based on if the task is completed. (optional)
   // If not set, returns all tasks.
   optional bool completed = 2;
-  
+
   int32 page_size = 3;
   int32 page_number = 4;
 }
@@ -81,30 +81,7 @@ service TaskService {
   rpc ListTasks(ListTasksRequest) returns (ListTasksResponse) {}
   rpc UpdateTask(UpdateTaskRequest) returns (UpdateTaskResponse) {}
   rpc DeleteTask(DeleteTaskRequest) returns (DeleteTaskResponse) {}
-  
+
   // Server rpc streaming of task updates, by watching on list of tasks.
   rpc WatchTasks(ListTasksRequest) returns (stream Task) {}
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -409,7 +409,7 @@ CREATE INDEX idx_tasks_completed ON tasks(completed);
 ### Project Structure
 ```
 taskboard/
-├── api/proto/task/v1/          # gRPC API definitions
+├── proto/task/v1/          # gRPC API definitions
 │   ├── task.proto
 │   └── task_grpc.pb.go
 ├── cmd/

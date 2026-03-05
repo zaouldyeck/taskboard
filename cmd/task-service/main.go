@@ -10,10 +10,9 @@ import (
 	"time"
 
 	"github.com/nats-io/nats.go"
-	pb "github.com/zaouldyeck/taskboard/api/proto/task/v1"
-	"github.com/zaouldyeck/taskboard/internal/database"
-	"github.com/zaouldyeck/taskboard/internal/task/repository"
-	"github.com/zaouldyeck/taskboard/internal/task/service"
+	"github.com/zaouldyeck/taskboard/business/core/task"
+	pb "github.com/zaouldyeck/taskboard/proto/task/v1"
+	database "github.com/zaouldyeck/taskboard/sys/db"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
@@ -68,11 +67,15 @@ func main() {
 	defer nc.Close()
 	log.Printf("Connected to NATS successfully. Server: %s", nc.ConnectedUrl())
 
-	// Bootstrap postgres repo and services.
-	repo := repository.NewPostgresRepository(db)
-	taskService := service.NewTaskService(repo, nc)
+	// Bootstrap store and service.
+	store := task.NewTaskDB(db)
+	taskService := task.NewService(store)
+
+	// Create gRPC handler.
+	grpcHandler := NewGRPCHandler(taskService, nc)
+
 	grpcServer := grpc.NewServer()
-	pb.RegisterTaskServiceServer(grpcServer, taskService)
+	pb.RegisterTaskServiceServer(grpcServer, grpcHandler)
 	reflection.Register(grpcServer)
 
 	// TCP listener.

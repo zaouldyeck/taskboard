@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/zaouldyeck/taskboard/internal/gateway/grpcclient"
+	"github.com/zaouldyeck/taskboard/sys/api/gateway/grpcclient"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

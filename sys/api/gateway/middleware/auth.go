@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/zaouldyeck/taskboard/internal/gateway/grpcclient"
+	"github.com/zaouldyeck/taskboard/sys/api/gateway/grpcclient"
 )
 
 // Custom type used for defining context keys to avoid collision

@@ -15,10 +15,10 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/nats-io/nats.go"
 
-	"github.com/zaouldyeck/taskboard/internal/gateway/grpcclient"
-	"github.com/zaouldyeck/taskboard/internal/gateway/handlers"
-	"github.com/zaouldyeck/taskboard/internal/gateway/middleware"
-	ws "github.com/zaouldyeck/taskboard/internal/gateway/websocket"
+	"github.com/zaouldyeck/taskboard/sys/api/gateway/grpcclient"
+	"github.com/zaouldyeck/taskboard/sys/api/gateway/handlers"
+	"github.com/zaouldyeck/taskboard/sys/api/gateway/middleware"
+	ws "github.com/zaouldyeck/taskboard/sys/api/gateway/websocket"
 )
 
 // HTTP to WebSocket upgrader config.

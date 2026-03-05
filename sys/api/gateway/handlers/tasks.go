@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"strings"
 
-	pb "github.com/zaouldyeck/taskboard/api/proto/task/v1"
-	"github.com/zaouldyeck/taskboard/internal/gateway/grpcclient"
+	pb "github.com/zaouldyeck/taskboard/proto/task/v1"
+	"github.com/zaouldyeck/taskboard/sys/api/gateway/grpcclient"
 )
 
 type TaskHandler struct {

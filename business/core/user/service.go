@@ -8,8 +8,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	pb "github.com/zaouldyeck/taskboard/api/proto/user/v1"
-	"github.com/zaouldyeck/taskboard/business/sys/auth"
+	pb "github.com/zaouldyeck/taskboard/proto/user/v1"
+	"github.com/zaouldyeck/taskboard/sys/auth"
 )
 
 // Service implements UserServiceServer.

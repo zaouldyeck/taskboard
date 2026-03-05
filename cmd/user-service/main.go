@@ -9,10 +9,10 @@ import (
 	"syscall"
 	"time"
 
-	pb "github.com/zaouldyeck/taskboard/api/proto/user/v1"
 	"github.com/zaouldyeck/taskboard/business/core/user"
-	"github.com/zaouldyeck/taskboard/business/sys/auth"
-	"github.com/zaouldyeck/taskboard/internal/database"
+	pb "github.com/zaouldyeck/taskboard/proto/user/v1"
+	"github.com/zaouldyeck/taskboard/sys/auth"
+	database "github.com/zaouldyeck/taskboard/sys/db"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
