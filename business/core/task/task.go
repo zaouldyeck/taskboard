@@ -1,6 +1,16 @@
 package task
 
-import "time"
+import (
+	"errors"
+	"time"
+)
+
+var (
+	ErrNotFound       = errors.New("task not found")
+	ErrInvalidBoardID = errors.New("boardID is required")
+	ErrInvalidTitle   = errors.New("title is required")
+	ErrInvalidTaskID  = errors.New("taskID is required")
+)
 
 // Task defines a task object which gives us a way to store specific
 // details about a specific task and store that in our DB.

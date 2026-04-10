@@ -2,16 +2,7 @@ package task
 
 import (
 	"context"
-	"errors"
 	"fmt"
-)
-
-var (
-	ErrNotFound       = errors.New("task not found")
-	ErrInvalidTask    = errors.New("invalid task")
-	ErrInvalidBoardID = errors.New("boardID is required")
-	ErrInvalidTitle   = errors.New("title is required")
-	ErrInvalidTaskID  = errors.New("taskID is required")
 )
 
 // Service handles business logic for handling tasks.
