@@ -37,6 +37,34 @@ func NewGRPCHandler(service *task.Service, nc *nats.Conn) *GRPCHandler {
 	return &GRPCHandler{service: service, nats: nc}
 }
 
+func domainToProto(t *task.Task) *pb.Task {
+	return &pb.Task{
+		Id:          t.ID,
+		BoardId:     t.BoardID,
+		Title:       t.Title,
+		Description: t.Description,
+		Completed:   t.Completed,
+		CreatedBy:   t.CreatedBy,
+		CreatedAt:   timestamppb.New(t.CreatedAt),
+		UpdatedAt:   timestamppb.New(t.UpdatedAt),
+	}
+}
+
+// toGRPCError maps domain errors to gRPC error codes
+// so that we can return error to calling grpc api-gateway code.
+func toGRPCError(err error) error {
+	switch {
+	case errors.Is(err, task.ErrNotFound):
+		return status.Error(codes.NotFound, err.Error())
+	case errors.Is(err, task.ErrInvalidBoardID),
+		errors.Is(err, task.ErrInvalidTitle),
+		errors.Is(err, task.ErrInvalidTaskID):
+		return status.Error(codes.InvalidArgument, err.Error())
+	default:
+		return status.Error(codes.Internal, "internal error")
+	}
+}
+
 // publishEvent is used for connecting handler methods event publishing with NATS.
 func (h *GRPCHandler) publishEvent(eventType string, t *task.Task) {
 	event := TaskEvent{
@@ -141,32 +169,4 @@ func (h *GRPCHandler) DeleteTask(ctx context.Context, req *pb.DeleteTaskRequest)
 	h.publishEvent("deleted", t)
 
 	return &pb.DeleteTaskResponse{Success: true}, nil
-}
-
-func domainToProto(t *task.Task) *pb.Task {
-	return &pb.Task{
-		Id:          t.ID,
-		BoardId:     t.BoardID,
-		Title:       t.Title,
-		Description: t.Description,
-		Completed:   t.Completed,
-		CreatedBy:   t.CreatedBy,
-		CreatedAt:   timestamppb.New(t.CreatedAt),
-		UpdatedAt:   timestamppb.New(t.UpdatedAt),
-	}
-}
-
-// toGRPCError maps domain errors to gRPC error codes
-// so that we can return error to calling grpc api-gateway code.
-func toGRPCError(err error) error {
-	switch {
-	case errors.Is(err, task.ErrNotFound):
-		return status.Error(codes.NotFound, err.Error())
-	case errors.Is(err, task.ErrInvalidBoardID),
-		errors.Is(err, task.ErrInvalidTitle),
-		errors.Is(err, task.ErrInvalidTaskID):
-		return status.Error(codes.InvalidArgument, err.Error())
-	default:
-		return status.Error(codes.Internal, "internal error")
-	}
 }

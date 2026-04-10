@@ -2,19 +2,15 @@ package user
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-
-	pb "github.com/zaouldyeck/taskboard/proto/user/v1"
 	"github.com/zaouldyeck/taskboard/sys/auth"
 )
 
-// Service implements UserServiceServer.
+// Service handles business logic for users.
 type Service struct {
-	pb.UnimplementedUserServiceServer
 	store       *Store
 	auth        *auth.Auth
 	tokenExpiry time.Duration
@@ -35,140 +31,114 @@ func NewService(cfg Config) *Service {
 }
 
 // Register creates a new user.
-func (s *Service) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.RegisterResponse, error) {
+func (s *Service) Register(ctx context.Context, email, username, password string) (User, string, error) {
 	// Validate input.
-	if req.Email == "" {
-		return nil, status.Error(codes.InvalidArgument, "email is required")
+	if email == "" {
+		return User{}, "", ErrEmptyEmail
 	}
-	if req.Username == "" {
-		return nil, status.Error(codes.InvalidArgument, "user is required")
+	if username == "" {
+		return User{}, "", ErrEmptyUsername
 	}
-	if req.Password == "" {
-		return nil, status.Error(codes.InvalidArgument, "password is required")
+	if password == "" {
+		return User{}, "", ErrEmptyPassword
 	}
 
 	// Create user object.
-	usr, err := New(req.Email, req.Username, req.Password)
+	usr, err := New(email, username, password)
 	if err != nil {
-		// Translate domain level errors to gRPC.
-		if err == ErrInvalidEmail {
-			return nil, status.Error(codes.InvalidArgument, "invalid email format")
+		// Return domain level errors during user creation validation.
+		if errors.Is(err, ErrInvalidEmail) {
+			return User{}, "", ErrInvalidEmail
 		}
-		if err == ErrWeakPassword {
-			return nil, status.Error(codes.InvalidArgument, "minimum password length is 8")
+		if errors.Is(err, ErrWeakPassword) {
+			return User{}, "", ErrWeakPassword
 		}
-		return nil, status.Error(codes.Internal,
-			fmt.Sprintf("failed to create user: %v", err))
+		return User{}, "", fmt.Errorf("unable to create user: %w", err)
 	}
 
 	// Save user to DB.
 	if err := s.store.Create(ctx, usr); err != nil {
-		// Translate storage errors to gRPC errors.
-		if err == ErrEmailTaken {
-			return nil, status.Error(codes.AlreadyExists, "email already registered")
+		// Return domain level error during user storing validation.
+		if errors.Is(err, ErrEmailTaken) {
+			return User{}, "", ErrEmailTaken
 		}
-		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to save user: %v", err))
+		return User{}, "", fmt.Errorf("unable to store user in DB: %w", err)
 	}
 
 	// Generate JWT.
 	token, err := s.auth.GenerateToken(usr.Id(), usr.Email(), s.tokenExpiry)
 	if err != nil {
-		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to generate token: %v", err))
+		return User{}, "", fmt.Errorf("failed to generate token: %w", err)
 	}
 
-	return &pb.RegisterResponse{
-		User: &pb.User{
-			Id:        usr.Id(),
-			Email:     usr.Email(),
-			Username:  usr.Username(),
-			CreatedAt: time.Now().Unix(),
-		},
-		Token: token,
-	}, nil
+	return usr, token, nil
 }
 
 // Login auths a user and returns a token.
-func (s *Service) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResponse, error) {
+func (s *Service) Login(ctx context.Context, email, password string) (User, string, error) {
 	// Validate input.
-	if req.Email == "" {
-		return nil, status.Error(codes.InvalidArgument, "email is required")
+	if email == "" {
+		return User{}, "", ErrEmptyEmail
 	}
-	if req.Password == "" {
-		return nil, status.Error(codes.InvalidArgument, "password is required")
+	if password == "" {
+		return User{}, "", ErrEmptyPassword
 	}
 
 	// Get user by querying for the email address.
-	usr, err := s.store.QueryByEmail(ctx, req.Email)
+	usr, err := s.store.QueryByEmail(ctx, email)
 	if err != nil {
-		if err == ErrNotFound {
-			return nil, status.Error(codes.Unauthenticated, "invalid email or password")
+		if errors.Is(err, ErrNotFound) {
+			return User{}, "", ErrInvalidCredentials
 		}
-		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to get user: %v", err))
+		return User{}, "", fmt.Errorf("querying user by email: %w", err)
 	}
 
 	// Verify password.
-	if !usr.Authenticate(req.Password) {
-		return nil, status.Error(codes.Unauthenticated, "invalid email or password")
+	if !usr.Authenticate(password) {
+		return User{}, "", ErrInvalidCredentials
 	}
 
 	// Generate JWT.
 	token, err := s.auth.GenerateToken(usr.Id(), usr.Email(), s.tokenExpiry)
 	if err != nil {
-		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to generate token: %v", err))
+		return User{}, "", fmt.Errorf("failed to generate token: %w", err)
 	}
 
 	// Return response.
-	return &pb.LoginResponse{
-		User: &pb.User{
-			Id:       usr.Id(),
-			Email:    usr.Email(),
-			Username: usr.Username(),
-		},
-		Token: token,
-	}, nil
+	return usr, token, nil
 }
 
 // ValidateToken checks JWT validity.
-func (s *Service) ValidateToken(ctx context.Context, req *pb.ValidateTokenRequest) (*pb.ValidateTokenResponse, error) {
-	if req.Token == "" {
-		return &pb.ValidateTokenResponse{Valid: false}, nil
+func (s *Service) ValidateToken(ctx context.Context, token string) (auth.TokenClaims, bool, error) {
+	if token == "" {
+		return auth.TokenClaims{}, false, nil
 	}
 
 	// Validate token.
-	claims, err := s.auth.ValidateToken(req.Token)
+	claims, err := s.auth.ValidateToken(token)
 	if err != nil {
-		return &pb.ValidateTokenResponse{Valid: false}, nil
+		return auth.TokenClaims{}, false, nil
 	}
 
 	// Validation result.
-	return &pb.ValidateTokenResponse{
-		Valid:  true,
-		UserId: claims.UserId,
-		Email:  claims.Email,
-	}, nil
+	return *claims, true, nil
 }
 
 // GetUser fetches user info by querying id.
-func (s *Service) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.GetUserResponse, error) {
-	if req.Id == "" {
-		return nil, status.Error(codes.InvalidArgument, "id is required")
+func (s *Service) GetUser(ctx context.Context, userID string) (User, error) {
+	if userID == "" {
+		return User{}, ErrEmptyID
 	}
 
 	// Get user from DB.
-	usr, err := s.store.QueryById(ctx, req.Id)
+	usr, err := s.store.QueryById(ctx, userID)
 	if err != nil {
-		if err == ErrNotFound {
-			return nil, status.Error(codes.NotFound, "user not found")
+		if errors.Is(err, ErrNotFound) {
+			return User{}, ErrNotFound
 		}
-		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to get user: %v", err))
+		return User{}, fmt.Errorf("failed to get user: %w", err)
 	}
 
 	// Return user info to caller.
-	return &pb.GetUserResponse{
-		User: &pb.User{
-			Id:       usr.Id(),
-			Email:    usr.Email(),
-			Username: usr.Username(),
-		},
-	}, nil
+	return usr, nil
 }

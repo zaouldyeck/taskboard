@@ -78,11 +78,13 @@ func main() {
 	})
 	log.Println("✅ User service initialized")
 
+	grpcHandler := NewGRPCHandler(userService)
+
 	grpcServer := grpc.NewServer()
 
 	// Register user-service with grpc, connecting gRPC protobuf with our
 	// internal handler code.
-	pb.RegisterUserServiceServer(grpcServer, userService)
+	pb.RegisterUserServiceServer(grpcServer, grpcHandler)
 
 	// Enable reflection to use grpcurl and other debugging for testing,
 	// exposing the API.

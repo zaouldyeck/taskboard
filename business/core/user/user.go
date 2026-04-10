@@ -15,6 +15,13 @@ var (
 	ErrEmailTaken         = errors.New("email already taken")
 	ErrInvalidCredentials = errors.New("invalid email or password")
 	ErrEmptyUsername      = errors.New("username cannot be empty")
+	ErrEmptyEmail         = errors.New("email cannot be empty")
+	ErrEmptyPassword      = errors.New("password cannot be empty")
+	ErrInvalidUsername    = errors.New("invalid username")
+	ErrInvalidPassword    = errors.New("invalid password")
+	ErrEmptyToken         = errors.New("token cannot be empty")
+	ErrInvalidToken       = errors.New("token is invalid")
+	ErrEmptyID            = errors.New("userID cannot be empty")
 )
 
 type User struct {
