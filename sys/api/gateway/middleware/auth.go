@@ -35,6 +35,15 @@ func extractToken(r *http.Request) string {
 func AuthMiddleware(userClient *grpcclient.UserClient) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Let preflight requests through without auth.
+			if r.Method == http.MethodOptions {
+				w.Header().Set("Access-Control-Allow-Origin", "*")
+				w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+				w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+				w.WriteHeader(http.StatusOK)
+				return
+			}
+
 			token := extractToken(r)
 			if token == "" {
 				http.Error(w, "Missing authorization token", http.StatusUnauthorized)

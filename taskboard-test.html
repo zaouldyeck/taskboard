@@ -64,6 +64,9 @@
     
     <div id="status" class="connecting">Connecting to WebSocket...</div>
     
+    <h2>Auth Token</h2>
+    <input id="authToken" type="text" placeholder="Paste JWT token here" style="width: 95%; font-size: 12px;">
+
     <h2>Live Events</h2>
     <div id="events"></div>
     
@@ -137,12 +140,19 @@
                 alert('Please enter a task title');
                 return;
             }
+
+            const token = document.getElementById('authToken').value;
+            if (!token) {
+                alert('Please paste a JWT token first');
+                return;
+            }
             
             try {
                 const response = await fetch('http://localhost:8080/api/tasks', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token,
                     },
                     body: JSON.stringify({
                         board_id: 1,
